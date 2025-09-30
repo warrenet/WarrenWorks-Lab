@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://warrenet.github.io/WarrenWorks-Lab/sitemap.xml
