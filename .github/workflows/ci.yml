@@ -7,10 +7,71 @@ on:
     branches: ["**"]
 
 jobs:
-  ci:
+  shellcheck:
+    name: Lint Shell Scripts
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      
+      - name: Lint shell scripts
+        run: |
+          echo "Linting shell scripts..."
+          EXIT_CODE=0
+          while IFS= read -r -d '' script; do
+            echo "Checking: $script"
+            if ! shellcheck "$script"; then
+              EXIT_CODE=1
+            fi
+          done < <(find . -name "*.sh" -type f -print0)
+          exit $EXIT_CODE
+
+  node:
+    name: Node.js CI (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    if: hashFiles('package.json') != ''
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        node-version: [18, 20]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linter
+        run: npm run lint --if-present
+      
+      - name: Build
+        run: npm run build --if-present
+      
+      - name: Run tests
+        run: npm test --if-present
+
+  static-site:
+    name: Build and Deploy Static Site
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/gh-pages' && github.event_name == 'push'
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     
     steps:
       - name: Checkout repository
@@ -24,13 +85,22 @@ jobs:
           echo "Event: ${{ github.event_name }}"
           echo "Actor: ${{ github.actor }}"
       
-      - name: Install shellcheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
-      
-      - name: Lint shell scripts
+      - name: Verify static site files
         run: |
-          echo "Linting shell scripts..."
-          while IFS= read -r -d '' script; do
-            echo "Checking: $script"
-            shellcheck "$script" || true
-          done < <(find . -name "*.sh" -type f -print0)
+          echo "Checking for static site files..."
+          if [ -f "index.html" ]; then
+            echo "✓ Found index.html"
+            ls -lh *.html || true
+          else
+            echo "No static site detected"
+            exit 1
+          fi
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
