@@ -28,7 +28,7 @@ jobs:
       - name: Lint shell scripts
         run: |
           echo "Linting shell scripts..."
-          find . -name "*.sh" -type f -print0 | while IFS= read -r -d '' script; do
+          while IFS= read -r -d '' script; do
             echo "Checking: $script"
             shellcheck "$script" || true
-          done
+          done < <(find . -name "*.sh" -type f -print0)
