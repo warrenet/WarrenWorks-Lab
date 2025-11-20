@@ -12,6 +12,8 @@ jobs:
   shellcheck:
     name: Shellcheck
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,6 +27,8 @@ jobs:
   node:
     name: Node.js ${{ matrix.node-version }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     # Only run this job if package.json exists
     if: hashFiles('package.json') != ''
     strategy:
