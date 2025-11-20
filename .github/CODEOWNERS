@@ -1,0 +1,11 @@
+# Code owners for WarrenWorks-Lab
+# These users will be automatically requested for review when someone opens a pull request.
+
+# Global owner
+* @warrenet
+
+# Workflow files
+/.github/ @warrenet
+
+# Shell scripts
+*.sh @warrenet
